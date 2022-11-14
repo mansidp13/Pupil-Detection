@@ -3,13 +3,21 @@ A step-by-step guide to get the code working.
 1.	Save the video file of .mkv, .mp4, and .h264 to anywhere on the computer. 
 2.	Write the following lines in the command prompt to install the modules used in the python file:
 •	OpenCV: pip instOpenCVencv-python
+
 •	Glob: pip install glob2
+
 •	NumPy: pip install NumPy
+
 •	PIL: pip install Pillow
+
 •	Matplotlib: -m pip install -U matplotlib
+
 •	Math: pip install python-math
+
 •	Multiprocessing: pip install multiprocess
+
 •	Statistics: pip install statistics
+
 3.	Linesine #18, 19, and 21 are the initial values that be changed by the user.
 4.	W is the window size for which the code gives the moving average. That line optional can be uncommented if the user wants to use that.
 5.	S is the initialization value that works as the counter. There is no need to change that.
