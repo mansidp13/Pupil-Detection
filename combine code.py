@@ -5,12 +5,21 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import math
-from scipy.signal import savgol_filter
-import time
+##from scipy.signal import savgol_filter
+##import time
 from multiprocessing import Pool
 from PIL import Image
-import upload
+##import upload
 import statistics
+
+
+## Initial values ##
+
+##w = 15   ## window size for moving average
+s = 0    ## initial sum value to get moving average calculation
+##base_time = 5 ## the baseline time for the protocol
+filename = "filename.csv"  #change the file name to your prefrence
+
 
 def moving_avg(data_list, window_size):
     n = len(data_list)
@@ -34,6 +43,14 @@ def eliminate_outliers(data_list,difference):
             data_list[i] = data_list[i-1]  ## if the difference is bigger than threshold, previous data is taken
     return data_list
 
+def eliminate_zero (data_list):
+    n = len(data_list)
+    for i in range (2,n,1):
+        if data_list[i] == 0:
+            data_list[i] = data_list[i-1]
+    return data_list
+    
+
 ## function to detect the circle using edge detection
 def circle_detection(img_file):
     img = cv.imread(img_file) ## read the image file
@@ -44,7 +61,7 @@ def circle_detection(img_file):
 
     ## variable to get the timestamp from img number
     t1 = float(m1)
-    t = float(t1/6) # the frame/second is 6 in this case
+    t = float((t1-1)/30) # the frame/second is 30 in this case
     h, w = img.shape[:2]
 
 ##  creating a mask around the eyes to help code not detect other circles
@@ -67,12 +84,12 @@ def circle_detection(img_file):
 ##    img = masked_img
 
     
-    img = cv.medianBlur(img,11)# blurring the image
+    img = cv.medianBlur(img,19)# blurring the image times 19(always odd numbers) #blurring helps code detect a circle
     cimg = cv.cvtColor(img,cv.COLOR_BGR2GRAY) #converts to grayscale
 ##    cimg = cv.equalizeHist(cimg) #equalizes contrast
-    cimg = cv.convertScaleAbs(cimg, alpha= 1.1, beta= 15)
-
-    circles = cv.HoughCircles(cimg,cv.HOUGH_GRADIENT,2 ,1000, param1=60,param2=120,minRadius=14,maxRadius=320)
+    cimg = cv.convertScaleAbs(cimg, alpha= 2.5, beta= 17) # alpha brightens the image by alpha time(always odd)
+ 
+    circles = cv.HoughCircles(cimg,cv.HOUGH_GRADIENT,2 ,1000, param1=60,param2=120,minRadius=1,maxRadius=320) #change min and max radius according to min and max circle in pixel size
 
     ## when the circle is detected
     if circles is not None:
@@ -106,9 +123,7 @@ def circle_detection(img_file):
 
 if __name__ == '__main__':
     try:
-        c=[] ## initializing the list
-        w = 5   # window size for moving average
-        s = 0    # initial sum value to get moving average calculation
+        c=[]     ## initializing the list
         count = 1
         im =[]
         vid = input ("video path:") #path where the video is located
@@ -128,8 +143,8 @@ if __name__ == '__main__':
           success, image = vidcap.read()
           print('Saved image ', count)
           count += 1
-          
-        for n in range(1,15,1):      
+##          
+        for n in range(1,count,1):
             b = f'{path}{ "/" }{n}{".png"}'
             im.append(b) ## creates the list of paths to images
         
@@ -139,19 +154,20 @@ if __name__ == '__main__':
            
     finally:
         print("Done detecting")
-##    finish = time.perf_counter()
 
     x = [lis[0] for lis in c]
     y = [lis[1] for lis in c]
     x_pix = [lis[2] for lis in c]
     y_pix = [lis[3] for lis in c]
-##     = list(np.array(radius)*np.array(radius)*math.pi)  ## to find the area
-##    print(x,y,x_pix,y_pix)
+
+##    area = list(np.array(radius)*np.array(radius)*math.pi)  ## to find the area
+
     n = len(y)
     y_avg = y
 
     ## data processing
-    y = eliminate_outliers(y,33)  # eliminating the outliers
+    y = eliminate_outliers(y,25)  # eliminating the outliers
+    y = eliminate_zero(y)
     y_pix = eliminate_outliers(y_pix,10)
     x_pix = eliminate_outliers(x_pix,10)
     y_avg = moving_avg(y,w)
@@ -160,20 +176,17 @@ if __name__ == '__main__':
     base_data = [y[i] for i in range (len(y)) if float(x[i]) < base_time]
     base_dia = statistics.mean(base_data)
     normal_data = [(y[i]/base_dia)*(100) for i in range (len(y))]
-    np.savetxt("y_liane_1.csv",np.transpose([x,y,x_pix,y_pix,normal_data]),fmt="%f",
+    np.savetxt(filename,np.transpose([x,y,x_pix,y_pix,normal_data]),fmt="%f",
                header='Time(s),Radius(Pixel),center(x),center(y),normal_data(%)',delimiter=",")
             
-##  print(x,y,y_avg,"x co-rdinates are:" ,x_pix,"y coordinates are: ", y_pix)            
-##   print(y,y_avg)   
-    
 ## Ploting details
-    plt.ylim(10, 320)
+##    plt.ylim(10, 320)
     plt.ylabel("Pupil Diameter (Pixels)")
     plt.xlabel("time (t)")
-    plt.grid()
+##    plt.grid()
 
-    x1 = plt.plot(x,y,'g')
-    x2 = plt.plot(x,normal_data,'red')
+    x1 = plt.plot(x,y)
+    x2 = plt.plot(x,normal_data)
     plt.legend(["Pupil Diameter", "Normal Pupil Diameter"], loc ="lower right")
     
 ##    x3 = plt.plot(x,y_avg,'red')
